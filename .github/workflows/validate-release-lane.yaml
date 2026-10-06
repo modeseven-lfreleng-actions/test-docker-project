@@ -1,0 +1,51 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 The Linux Foundation
+
+# Throwaway caller that validates the docker-workflows release lane
+# (build-test-release.yaml, Model A) with a real, non-dry-run publish
+# to GHCR under this repository's owner. It exercises the surfaces a
+# dry run cannot reach: per-registry digest capture, multi-platform
+# manifest lists, cosign keyless signing, SLSA provenance and the
+# 'latest' retag. See lfreleng-actions/docker-workflows#28.
+#
+# Only v99.* tags trigger it, so no ordinary release tag can publish
+# through this validation caller.
+name: 'Validate Release Lane'
+
+# yamllint disable-line rule:truthy
+on:
+  push:
+    tags:
+      - 'v99.*'
+
+permissions: {}
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: 'Build/Test/Release'
+    # Skip tag deletion events
+    if: "!github.event.deleted"
+    permissions:
+      contents: write       # Create the GitHub release / attach assets
+      id-token: write       # OIDC for cosign signing and attestations
+      attestations: write   # Build provenance attestations
+      packages: write       # Push images to GHCR
+    # yamllint disable-line rule:line-length
+    uses: lfreleng-actions/docker-workflows/.github/workflows/build-test-release.yaml@43a5984c41f36dd12ba80699de83202884559e1a  # v0.7.0
+    with:
+      ghcr_publish: true
+      dockerhub_publish: false
+      dry_run: false
+      platforms: 'linux/amd64,linux/arm64'
+      push_latest: true
+      # The fixture's nginx:alpine base carries unfixed medium/high
+      # CVEs and hadolint reports DL3066 (info) on its USER line.
+      # Both scans still run and report; permitting their findings
+      # lets the run reach the publish-only surfaces under test.
+      lint_permit_fail: true
+      grype_permit_fail: true
