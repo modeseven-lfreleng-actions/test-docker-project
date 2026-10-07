@@ -35,8 +35,11 @@ jobs:
       id-token: write       # OIDC for cosign signing and attestations
       attestations: write   # Build provenance attestations
       packages: write       # Push images to GHCR
+    # Head of lfreleng-actions/docker-workflows#107, referenced through
+    # the fork that holds the commit rather than through the parent
+    # repository's fork network
     # yamllint disable-line rule:line-length
-    uses: lfreleng-actions/docker-workflows/.github/workflows/build-test-release.yaml@43a5984c41f36dd12ba80699de83202884559e1a  # v0.7.0
+    uses: modeseven-lfreleng-actions/docker-workflows/.github/workflows/build-test-release.yaml@1a592bf1e363503b5d5c08b3ad80e332a95b988e  # PR #107 head
     with:
       ghcr_publish: true
       dockerhub_publish: false
